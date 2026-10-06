@@ -161,6 +161,24 @@ const SIDEBAR_BACK_LABELS: { [language: string]: string } = {
   it: "Indietro"
 };
 
+// The extra customizations must never stop the app from loading (the loading screen only goes away once the whole setup below has finished),
+// so a customization that fails or hangs is only logged to the console and skipped
+async function runCustomization(name: string, customization: () => void | Promise<void>) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      Promise.resolve().then(customization),
+      new Promise<void>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error("timed out")), 5000);
+      })
+    ]);
+  } catch (error) {
+    console.error(`[ytmd] Customization "${name}" failed and was skipped`, error);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function pausePlayback() {
   try {
     (
@@ -486,12 +504,12 @@ window.addEventListener("load", async () => {
 
   createStyleSheet();
   createNavigationMenuArrows();
-  createSidebarBackButton();
+  await runCustomization("sidebar back button", createSidebarBackButton);
   createKeyboardNavigation();
   await createAdditionalPlayerBarControls();
   await hideChromecastButton();
-  await simplifyContextMenu();
-  await sortSidebarPlaylists();
+  await runCustomization("simplify context menu", simplifyContextMenu);
+  await runCustomization("sort sidebar playlists", sortSidebarPlaylists);
   await hookPlayerApiEvents();
   overrideHistoryButtonDisplay();
 

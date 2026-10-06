@@ -146,6 +146,177 @@ function createNavigationMenuArrows() {
   }
 }
 
+const SIDEBAR_BACK_LABELS: { [language: string]: string } = {
+  pt: "Voltar",
+  es: "Atrás",
+  fr: "Retour",
+  de: "Zurück",
+  it: "Indietro"
+};
+
+// Adds a "Back" button to YTM's left sidebar, right below "Home" (and above "Explore"), in both the expanded and the collapsed sidebar
+function createSidebarBackButton() {
+  let canGoBack = history.length > 1;
+
+  const language = (document.documentElement.lang || navigator.language || "en").slice(0, 2).toLowerCase();
+  const label = SIDEBAR_BACK_LABELS[language] ?? "Back";
+
+  const css = document.createElement("style");
+  css.appendChild(
+    document.createTextNode(`
+      .ytmd-sidebar-back {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        color: #FFFFFF;
+        font-family: Roboto, Noto, sans-serif;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 8px;
+        outline: none;
+      }
+
+      .ytmd-sidebar-back .ytmd-sidebar-back-icon {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        font-size: 24px;
+        line-height: 24px;
+      }
+
+      .ytmd-sidebar-back--full {
+        width: 100%;
+        height: 48px;
+        padding: 0 16px;
+      }
+
+      .ytmd-sidebar-back--full .ytmd-sidebar-back-icon {
+        margin-right: 20px;
+      }
+
+      .ytmd-sidebar-back--full .ytmd-sidebar-back-label {
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 24px;
+      }
+
+      .ytmd-sidebar-back--mini {
+        width: 56px;
+        height: 65px;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .ytmd-sidebar-back--mini .ytmd-sidebar-back-label {
+        margin-top: 5px;
+        font-size: 10px;
+        line-height: 12px;
+      }
+
+      .ytmd-sidebar-back:hover:not(.disabled),
+      .ytmd-sidebar-back:focus-visible:not(.disabled) {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .ytmd-sidebar-back.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    `)
+  );
+  document.head.appendChild(css);
+
+  const goBack = () => {
+    if (canGoBack) {
+      history.back();
+    }
+  };
+
+  const updateState = () => {
+    for (const button of document.querySelectorAll(".ytmd-sidebar-back")) {
+      button.classList.toggle("disabled", !canGoBack);
+      button.setAttribute("aria-disabled", String(!canGoBack));
+    }
+  };
+
+  const buildButton = (variant: "full" | "mini") => {
+    const button = document.createElement("div");
+    button.classList.add("ytmd-sidebar-back", `ytmd-sidebar-back--${variant}`);
+    button.setAttribute("role", "button");
+    button.tabIndex = 0;
+    button.title = label;
+    button.setAttribute("aria-label", label);
+
+    const icon = document.createElement("span");
+    icon.classList.add("material-symbols-outlined", "ytmd-sidebar-back-icon");
+    icon.innerText = "arrow_back";
+
+    const text = document.createElement("span");
+    text.classList.add("ytmd-sidebar-back-label");
+    text.innerText = label;
+
+    button.append(icon, text);
+
+    button.addEventListener("click", goBack);
+    button.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        goBack();
+      }
+    });
+
+    return button;
+  };
+
+  // YTM can redraw the sidebar at any time, so make sure the button exists and is still right after "Home"
+  const ensureButtons = () => {
+    const guides = [
+      { selector: "#guide-renderer", variant: "full" },
+      { selector: "#mini-guide-renderer", variant: "mini" }
+    ] as const;
+
+    for (const { selector, variant } of guides) {
+      const guide = document.querySelector(selector);
+      if (!guide) continue;
+
+      const home = guide.querySelector("ytmusic-guide-section-renderer ytmusic-guide-entry-renderer");
+      if (!home) continue;
+
+      const existing = guide.querySelector(".ytmd-sidebar-back");
+      if (existing && existing.previousElementSibling === home) continue;
+
+      home.insertAdjacentElement("afterend", existing ?? buildButton(variant));
+    }
+
+    updateState();
+  };
+
+  let ensureScheduled = false;
+  const scheduleEnsure = () => {
+    if (ensureScheduled) return;
+    ensureScheduled = true;
+    requestAnimationFrame(() => {
+      ensureScheduled = false;
+      ensureButtons();
+    });
+  };
+
+  ensureButtons();
+
+  const observer = new MutationObserver(scheduleEnsure);
+  for (const selector of ["#guide-renderer", "#mini-guide-renderer"]) {
+    const guide = document.querySelector(selector);
+    if (guide) {
+      observer.observe(guide, { childList: true, subtree: true });
+    }
+  }
+
+  ipcRenderer.on("ytmView:navigationStateChanged", (_event, state: { canGoBack: boolean }) => {
+    canGoBack = state.canGoBack;
+    updateState();
+  });
+}
+
 function createKeyboardNavigation() {
   const keyboardNavigation = document.createElement("div");
   keyboardNavigation.tabIndex = 32767;
@@ -274,6 +445,7 @@ window.addEventListener("load", async () => {
 
   createStyleSheet();
   createNavigationMenuArrows();
+  createSidebarBackButton();
   createKeyboardNavigation();
   await createAdditionalPlayerBarControls();
   await hideChromecastButton();

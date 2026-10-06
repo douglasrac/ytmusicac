@@ -82,6 +82,11 @@ function createStyleSheet() {
       .ytmd-player-bar-control.sleep-timer-button.active {
         color: #FFFFFF;
       }
+
+      /* Never show the floating video miniplayer that YTM opens when leaving the player page (the music keeps playing through the player bar) */
+      ytmusic-player[player-ui-state="MINIPLAYER"] {
+        display: none !important;
+      }
     `)
   );
   document.head.appendChild(css);
@@ -153,6 +158,20 @@ const SIDEBAR_BACK_LABELS: { [language: string]: string } = {
   de: "Zurück",
   it: "Indietro"
 };
+
+async function pausePlayback() {
+  try {
+    (
+      await webFrame.executeJavaScript(`
+        (function() {
+          window.__YTMD_HOOK__.ytmPlayerBar.playerApi.pauseVideo();
+        })
+      `)
+    )();
+  } catch {
+    document.querySelector("video")?.pause();
+  }
+}
 
 // Adds a "Back" button to YTM's left sidebar, right below "Home" (and above "Explore"), in both the expanded and the collapsed sidebar
 function createSidebarBackButton() {
@@ -227,9 +246,21 @@ function createSidebarBackButton() {
   document.head.appendChild(css);
 
   const goBack = () => {
-    if (canGoBack) {
-      history.back();
+    if (!canGoBack) return;
+
+    // Going back from the player page would leave the song playing without its page, so pause it once we have actually left the player page
+    if (window.location.pathname === "/watch") {
+      const onPopState = () => {
+        clearTimeout(removeListenerTimeout);
+        if (window.location.pathname !== "/watch") {
+          pausePlayback();
+        }
+      };
+      const removeListenerTimeout = setTimeout(() => window.removeEventListener("popstate", onPopState), 2000);
+      window.addEventListener("popstate", onPopState, { once: true });
     }
+
+    history.back();
   };
 
   const updateState = () => {

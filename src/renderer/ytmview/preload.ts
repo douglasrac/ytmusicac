@@ -18,6 +18,7 @@ import getPlaylistsScript from "./scripts/getplaylists.script?raw";
 import toggleLikeScript from "./scripts/togglelike.script?raw";
 import toggleDislikeScript from "./scripts/toggledislike.script?raw";
 import simplifyContextMenuScript from "./scripts/simplifycontextmenu.script?raw";
+import sortPlaylistsScript from "./scripts/sortplaylists.script?raw";
 
 const store = new Store<StoreSchema>();
 
@@ -367,6 +368,10 @@ async function simplifyContextMenu() {
   (await webFrame.executeJavaScript(simplifyContextMenuScript))();
 }
 
+async function sortSidebarPlaylists() {
+  (await webFrame.executeJavaScript(sortPlaylistsScript))();
+}
+
 async function hideChromecastButton() {
   (
     await webFrame.executeJavaScript(`
@@ -486,6 +491,7 @@ window.addEventListener("load", async () => {
   await createAdditionalPlayerBarControls();
   await hideChromecastButton();
   await simplifyContextMenu();
+  await sortSidebarPlaylists();
   await hookPlayerApiEvents();
   overrideHistoryButtonDisplay();
 

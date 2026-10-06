@@ -458,8 +458,15 @@ window.addEventListener("load", async () => {
   }
 
   let hookChecks = 0;
-  await new Promise<void>(resolve => {
+  const hookWaitStart = Date.now();
+  const hookReady = await new Promise<boolean>(resolve => {
     const interval = setInterval(async () => {
+      if (Date.now() - hookWaitStart > 20000) {
+        clearInterval(interval);
+        resolve(false);
+        return;
+      }
+
       if (++hookChecks % 20 === 0) {
         const state = await webFrame.executeJavaScript(`
           (function() {
@@ -491,10 +498,22 @@ window.addEventListener("load", async () => {
 
       if (hooked) {
         clearInterval(interval);
-        resolve();
+        resolve(true);
       }
     }, 250);
   });
+
+  if (!hookReady) {
+    // The YTM player never became available (for example when no player bar exists on the page). Do not keep the app on the loading screen forever:
+    // apply the customizations that do not depend on the player and show the page.
+    console.warn("[ytmd] YTM player hook was not ready after 20 seconds, continuing without player integration");
+    createStyleSheet();
+    await runCustomization("sidebar back button", createSidebarBackButton);
+    await runCustomization("simplify context menu", simplifyContextMenu);
+    await runCustomization("sort sidebar playlists", sortSidebarPlaylists);
+    ipcRenderer.send("ytmView:loaded");
+    return;
+  }
 
   console.log("[ytmd-debug] YTM hook ready");
   let materialSymbolsLoaded = false;

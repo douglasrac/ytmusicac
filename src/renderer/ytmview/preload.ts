@@ -56,20 +56,20 @@ function createStyleSheet() {
         color: #FFFFFF;
       }
 
-      /* Thicker song progress bar (3x), so it is easier to click */
+      /* Thicker song progress bar (18px, 6x the original 3px), so it is easier to click */
       .ytMusicMiniPlayerProgressBarWrapper {
-        height: 27px !important;
+        height: 36px !important;
       }
 
       input.ytMusicMiniPlayerProgressBar,
       input.ytMusicMiniPlayerProgressBar:hover,
       input.ytMusicMiniPlayerProgressBar:active {
-        height: 9px !important;
+        height: 18px !important;
         cursor: pointer;
       }
 
       input.ytMusicMiniPlayerProgressBar::-webkit-slider-runnable-track {
-        height: 9px !important;
+        height: 18px !important;
       }
 
       .ytmd-hidden {

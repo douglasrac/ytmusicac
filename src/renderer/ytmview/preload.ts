@@ -457,8 +457,26 @@ window.addEventListener("load", async () => {
     return;
   }
 
+  let hookChecks = 0;
   await new Promise<void>(resolve => {
     const interval = setInterval(async () => {
+      if (++hookChecks % 20 === 0) {
+        const state = await webFrame.executeJavaScript(`
+          (function() {
+            const hook = window.__YTMD_HOOK__;
+            return JSON.stringify({
+              hookExists: !!hook,
+              store: !!(hook && hook.ytmStore),
+              playerBar: !!(hook && hook.ytmPlayerBar),
+              playerApi: !!(hook && hook.ytmPlayerBar && hook.ytmPlayerBar.playerApi),
+              ytmApp: !!document.querySelector("ytmusic-app"),
+              playerBarElement: !!document.querySelector("ytmusic-player-bar"),
+              url: location.href
+            });
+          })
+        `);
+        console.log("[ytmd-debug] still waiting for YTM hook:", await state());
+      }
       const hooked = (
         await webFrame.executeJavaScript(`
         (function() {

@@ -517,6 +517,42 @@ window.addEventListener("load", async () => {
     // The YTM player never became available (for example when no player bar exists on the page). Do not keep the app on the loading screen forever:
     // apply the customizations that do not depend on the player and show the page.
     console.warn("[ytmd] YTM player hook was not ready after 20 seconds, continuing without player integration");
+
+    // Temporary diagnostics: find out why the player bar is missing and when (if ever) it appears
+    const describePage = `
+      (function() {
+        const hook = window.__YTMD_HOOK__;
+        const app = document.querySelector("ytmusic-app");
+        return JSON.stringify({
+          playerBarElement: !!document.querySelector("ytmusic-player-bar"),
+          playerBarHooked: !!(hook && hook.ytmPlayerBar),
+          playerApi: !!(hook && hook.ytmPlayerBar && hook.ytmPlayerBar.playerApi),
+          store: !!(hook && hook.ytmStore),
+          layout: !!document.querySelector("ytmusic-app-layout"),
+          playerUiState: (document.querySelector("ytmusic-player") || {}).getAttribute ? document.querySelector("ytmusic-player").getAttribute("player-ui-state") : null,
+          appChildren: app ? Array.from(app.children).map(child => child.tagName.toLowerCase()).slice(0, 15) : null,
+          ytmTags: Array.from(new Set(Array.from(document.querySelectorAll("*")).map(element => element.tagName.toLowerCase()).filter(tag => tag.startsWith("ytmusic-")))).slice(0, 60),
+          signedIn: !!document.querySelector("ytmusic-guide-section-renderer"),
+          bodyText: document.body.innerText.slice(0, 150)
+        });
+      })
+    `;
+    const diagnosticsStart = Date.now();
+    let lastDiagnostics = "";
+    const diagnosticsInterval = setInterval(async () => {
+      try {
+        const result: string = (await webFrame.executeJavaScript(describePage))();
+        const withoutText = result.replace(/"bodyText":.*$/, "");
+        if (withoutText !== lastDiagnostics) {
+          lastDiagnostics = withoutText;
+          console.log("[ytmd-debug] page state after " + Math.round((Date.now() - diagnosticsStart) / 1000) + "s into fallback:", result);
+        }
+      } catch {
+        // The page may be navigating, try again on the next tick
+      }
+    }, 2000);
+    setTimeout(() => clearInterval(diagnosticsInterval), 180000);
+
     createStyleSheet();
     await runCustomization("sidebar back button", createSidebarBackButton);
     await runCustomization("simplify context menu", simplifyContextMenu);

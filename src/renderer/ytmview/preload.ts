@@ -17,6 +17,7 @@ import hookPlayerApiEventsScript from "./scripts/hookplayerapievents.script?raw"
 import getPlaylistsScript from "./scripts/getplaylists.script?raw";
 import toggleLikeScript from "./scripts/togglelike.script?raw";
 import toggleDislikeScript from "./scripts/toggledislike.script?raw";
+import simplifyContextMenuScript from "./scripts/simplifycontextmenu.script?raw";
 
 const store = new Store<StoreSchema>();
 
@@ -362,6 +363,10 @@ async function createAdditionalPlayerBarControls() {
   (await webFrame.executeJavaScript(playerBarControlsScript))();
 }
 
+async function simplifyContextMenu() {
+  (await webFrame.executeJavaScript(simplifyContextMenuScript))();
+}
+
 async function hideChromecastButton() {
   (
     await webFrame.executeJavaScript(`
@@ -480,6 +485,7 @@ window.addEventListener("load", async () => {
   createKeyboardNavigation();
   await createAdditionalPlayerBarControls();
   await hideChromecastButton();
+  await simplifyContextMenu();
   await hookPlayerApiEvents();
   overrideHistoryButtonDisplay();
 

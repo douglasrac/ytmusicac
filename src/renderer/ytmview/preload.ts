@@ -56,22 +56,20 @@ function createStyleSheet() {
         color: #FFFFFF;
       }
 
-      /* Thicker song progress bar, so it is easier to click */
-      ytmusic-app-layout #progress-bar,
-      ytmusic-player-bar #progress-bar,
-      ytmusic-player-controls #progress-bar {
-        --paper-slider-height: 6px !important;
-        --paper-progress-height: 6px !important;
-        --ytmd-progress-height: 6px;
+      /* Thicker song progress bar (3x), so it is easier to click */
+      .ytMusicMiniPlayerProgressBarWrapper {
+        height: 27px !important;
       }
 
-      ytmusic-app-layout #progress-bar #sliderBar,
-      ytmusic-app-layout #progress-bar #sliderContainer {
-        height: 18px !important;
+      input.ytMusicMiniPlayerProgressBar,
+      input.ytMusicMiniPlayerProgressBar:hover,
+      input.ytMusicMiniPlayerProgressBar:active {
+        height: 9px !important;
+        cursor: pointer;
       }
 
-      ytmusic-app-layout #progress-bar #progressContainer {
-        height: 6px !important;
+      input.ytMusicMiniPlayerProgressBar::-webkit-slider-runnable-track {
+        height: 9px !important;
       }
 
       .ytmd-hidden {

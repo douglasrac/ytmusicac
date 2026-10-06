@@ -449,6 +449,7 @@ function getYTMTextRun(runs: { text: string }[]) {
 })();
 
 window.addEventListener("load", async () => {
+  console.log("[ytmd-debug] page load event on", window.location.hostname);
   if (window.location.hostname !== "music.youtube.com") {
     if (window.location.hostname === "consent.youtube.com" || window.location.hostname === "accounts.google.com") {
       ipcRenderer.send("ytmView:loaded");
@@ -477,6 +478,7 @@ window.addEventListener("load", async () => {
     }, 250);
   });
 
+  console.log("[ytmd-debug] YTM hook ready");
   let materialSymbolsLoaded = false;
 
   const materialSymbols = createMaterialSymbolsLink();
@@ -502,6 +504,7 @@ window.addEventListener("load", async () => {
     }, 250);
   });
 
+  console.log("[ytmd-debug] player api ready, applying customizations");
   createStyleSheet();
   createNavigationMenuArrows();
   await runCustomization("sidebar back button", createSidebarBackButton);
@@ -510,6 +513,7 @@ window.addEventListener("load", async () => {
   await hideChromecastButton();
   await runCustomization("simplify context menu", simplifyContextMenu);
   await runCustomization("sort sidebar playlists", sortSidebarPlaylists);
+  console.log("[ytmd-debug] customizations done");
   await hookPlayerApiEvents();
   overrideHistoryButtonDisplay();
 
@@ -873,5 +877,6 @@ window.addEventListener("load", async () => {
     }
   });
 
+  console.log("[ytmd-debug] sending ytmView:loaded");
   ipcRenderer.send("ytmView:loaded");
 });

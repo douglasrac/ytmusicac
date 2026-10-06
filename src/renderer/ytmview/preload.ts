@@ -471,7 +471,15 @@ window.addEventListener("load", async () => {
   const hookWaitStart = Date.now();
   const hookReady = await new Promise<boolean>(resolve => {
     const interval = setInterval(async () => {
-      if (Date.now() - hookWaitStart > 20000) {
+      // Newer YTM versions replaced the player bar this hook depends on (ytmusic-player-bar) with ytmusic-wiz-player-controls, so the hook can never become ready there
+      const usesNewPlayerBar: boolean = (
+        await webFrame.executeJavaScript(`
+          (function() {
+            return !!document.querySelector("ytmusic-wiz-player-controls") && !document.querySelector("ytmusic-player-bar");
+          })
+        `)
+      )();
+      if (usesNewPlayerBar || Date.now() - hookWaitStart > 8000) {
         clearInterval(interval);
         resolve(false);
         return;
@@ -516,7 +524,7 @@ window.addEventListener("load", async () => {
   if (!hookReady) {
     // The YTM player never became available (for example when no player bar exists on the page). Do not keep the app on the loading screen forever:
     // apply the customizations that do not depend on the player and show the page.
-    console.warn("[ytmd] YTM player hook was not ready after 20 seconds, continuing without player integration");
+    console.warn("[ytmd] YTM player hook was not ready after 8 seconds, continuing without player integration");
 
     // Temporary diagnostics: find out why the player bar is missing and when (if ever) it appears
     const describePage = `

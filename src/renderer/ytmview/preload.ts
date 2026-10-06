@@ -298,9 +298,19 @@ function createSidebarBackButton() {
     button.title = label;
     button.setAttribute("aria-label", label);
 
+    // Inline SVG instead of an icon font, so the arrow never depends on an external font being loaded
     const icon = document.createElement("span");
-    icon.classList.add("material-symbols-outlined", "ytmd-sidebar-back-icon");
-    icon.innerText = "arrow_back";
+    icon.classList.add("ytmd-sidebar-back-icon");
+    const svgNamespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNamespace, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "24");
+    svg.setAttribute("height", "24");
+    svg.setAttribute("fill", "currentColor");
+    const path = document.createElementNS(svgNamespace, "path");
+    path.setAttribute("d", "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z");
+    svg.append(path);
+    icon.append(svg);
 
     const text = document.createElement("span");
     text.classList.add("ytmd-sidebar-back-label");

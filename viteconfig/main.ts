@@ -30,7 +30,8 @@ export default defineConfig({
     }
   },
   define: {
-    YTMD_DISABLE_UPDATES: devBuild,
+    // This is a personal fork: updates stay disabled (the official releases would remove the custom changes) unless YTMD_ENABLE_UPDATES=1 is set
+    YTMD_DISABLE_UPDATES: devBuild || process.env.YTMD_ENABLE_UPDATES !== "1",
     YTMD_UPDATE_FEED_OWNER: process.env.YTMD_UPDATE_FEED_OWNER ? `'${process.env.YTMD_UPDATE_FEED_OWNER}'` : "'ytmdesktop'",
     YTMD_UPDATE_FEED_REPOSITORY: process.env.YTMD_UPDATE_FEED_REPOSITORY ? `'${process.env.YTMD_UPDATE_FEED_REPOSITORY}'` : "'ytmdesktop'"
   }

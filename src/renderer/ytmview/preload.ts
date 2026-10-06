@@ -56,6 +56,24 @@ function createStyleSheet() {
         color: #FFFFFF;
       }
 
+      /* Thicker song progress bar, so it is easier to click */
+      ytmusic-app-layout #progress-bar,
+      ytmusic-player-bar #progress-bar,
+      ytmusic-player-controls #progress-bar {
+        --paper-slider-height: 6px !important;
+        --paper-progress-height: 6px !important;
+        --ytmd-progress-height: 6px;
+      }
+
+      ytmusic-app-layout #progress-bar #sliderBar,
+      ytmusic-app-layout #progress-bar #sliderContainer {
+        height: 18px !important;
+      }
+
+      ytmusic-app-layout #progress-bar #progressContainer {
+        height: 6px !important;
+      }
+
       .ytmd-hidden {
         display: none;
       }
@@ -458,8 +476,53 @@ function getYTMTextRun(runs: { text: string }[]) {
   )();
 })();
 
+// Temporary diagnostics: describe the elements that look like the song progress bar, so the styling above can be adjusted to the page
+function logProgressBarDiagnostics() {
+  let attempts = 0;
+  const interval = setInterval(async () => {
+    attempts++;
+    if (attempts > 4) {
+      clearInterval(interval);
+      return;
+    }
+
+    try {
+      const result: string = (
+        await webFrame.executeJavaScript(`
+          (function() {
+            const found = [];
+            const walk = root => {
+              for (const element of root.querySelectorAll("*")) {
+                const name = (element.tagName + " " + element.id + " " + element.className).toLowerCase();
+                if (/slider|progress|seek/.test(name)) {
+                  const rect = element.getBoundingClientRect();
+                  if (rect.width > 0 && rect.bottom > window.innerHeight - 200) {
+                    found.push({
+                      tag: element.tagName.toLowerCase(),
+                      id: element.id,
+                      cls: String(element.className).slice(0, 60),
+                      rect: [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)]
+                    });
+                  }
+                }
+                if (element.shadowRoot) walk(element.shadowRoot);
+              }
+            };
+            walk(document);
+            return JSON.stringify(found.slice(0, 25));
+          })
+        `)
+      )();
+      console.log("[ytmd-debug] progress bar candidates (attempt " + attempts + "):", result);
+    } catch {
+      // The page may be navigating, try again on the next tick
+    }
+  }, 6000);
+}
+
 window.addEventListener("load", async () => {
   console.log("[ytmd-debug] page load event on", window.location.hostname);
+  logProgressBarDiagnostics();
   if (window.location.hostname !== "music.youtube.com") {
     if (window.location.hostname === "consent.youtube.com" || window.location.hostname === "accounts.google.com") {
       ipcRenderer.send("ytmView:loaded");
